@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>シラバス比較モード</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <h1>比較モード</h1>
+
+    <div id="Setup">
+      <!-- APIキー -->
+      <label>API Key:</label>
+      <input
+        type="password"
+        id="apiKey"
+        placeholder="Enter your API key"
+        onchange="saveSettings()"
+      />
+
+      <!-- シラバス入力 -->
+      <textarea
+        id="shirabasu"
+        placeholder="ここにシラバスの内容をコピペしてください"
+      ></textarea>
+      <button onclick="addToCompare()">比較リストに追加</button>
+      <button onclick="showCompare()">比較を見る</button>
+      <button onclick="location.href='index.html'">戻る</button>
+      <div id="loading" style="display: none">追加中...</div>
+    </div>
+
+    <div id="double-Results">
+      <div id="compareResult"></div>
+      <button onclick="restartQuiz()">戻る</button>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", loadSettings);
+      let gradeChartInstance = null;
+
+      function saveSettings() {
+        const apiKey = document.getElementById("apiKey").value;
+        localStorage.setItem("Setting", JSON.stringify({ apiKey }));
+      }
+
+      function loadSettings() {
+        const saved = localStorage.getItem("Setting");
+        if (saved) {
+          document.getElementById("apiKey").value =
+            JSON.parse(saved).apiKey || "";
+        }
+      }
+
+      async function addToCompare() {
+        const shirabasu = document.getElementById("shirabasu").value.trim();
+        if (!shirabasu) return alert("シラバスを入力してください");
+
+        const settings = JSON.parse(localStorage.getItem("Setting"));
+        if (!settings?.apiKey) return alert("APIキーを設定してください");
+
+        document.getElementById("loading").style.display = "block";
+
+        const prompt = `次の形式のJSON「のみ」を返してください。
+      {
+        "subject": "授業科目名",
+        "difficulty": "授業の大変さを★☆☆☆☆〜★★★★★で",
+        "evaluation": {
+          "exam": 60,
+          "report": 30,
+          "attendance": 10,
+          "presentation": 0
+        },
+        "kadai": "課題の量を★☆☆～★★★で"
+        "skill": "習得できるスキル、知識を一つ"
+      }
+      シラバス: ${shirabasu}`;
+
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+              }),
+            }
+          );
+
+          const data = await res.json();
+          const text = data.candidates[0].content.parts[0].text;
+          const json = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+
+          const list = JSON.parse(localStorage.getItem("compareList")) || [];
+          list.push(json);
+          localStorage.setItem("compareList", JSON.stringify(list));
+
+          alert(`「${json.subject}」を追加しました`);
+          document.getElementById("shirabasu").value = "";
+        } catch (e) {
+          alert("追加に失敗しました");
+          console.error(e);
+        } finally {
+          document.getElementById("loading").style.display = "none";
+        }
+      }
+
+      function showCompare() {
+        document.getElementById("Setup").style.display = "none";
+        document.getElementById("double-Results").style.display = "block";
+        const list = JSON.parse(localStorage.getItem("compareList")) || [];
+
+        if (list.length === 0) {
+          alert("比較データがありません");
+          document.getElementById("double-Results").style.display = "none";
+          document.getElementById("Setup").style.display = "block";
+          return;
+        }
+
+        let tableHTML = `
+          <h2>比較結果（${list.length}件）</h2>
+          <table border="1" cellpadding="8" cellspacing="0">
+            <thead>
+              <tr>
+                <th>授業名</th>
+                <th>難易度</th>
+                <th>試験</th>
+                <th>レポート</th>
+                <th>出席</th>
+                <th>発表</th>
+                <th>課題量</th>
+                <th>習得できる技術</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        list.forEach((s, i) => {
+          tableHTML += `
+            <tr>
+              <td>${s.subject}</td>
+              <td>${s.difficulty}</td>
+              <td>${s.evaluation.exam ?? "—"}%</td>
+              <td>${s.evaluation.report ?? "—"}%</td>
+              <td>${s.evaluation.attendance ?? "—"}%</td>
+              <td>${s.evaluation.presentation ?? "—"}%</td>
+              <td>${s.kadai}</td>
+              <td>${s.skill}</td>
+            </tr>
+          `;
+        });
+
+        tableHTML += `
+            </tbody>
+          </table>
+        `;
+
+        const ctx = document.getElementById("gradeChart");
+
+        document.getElementById("compareResult").innerHTML = tableHTML;
+
+        localStorage.removeItem("compareList");
+      }
+
+      function restartQuiz() {
+        document.getElementById("double-Results").style.display = "none";
+        document.getElementById("Setup").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
