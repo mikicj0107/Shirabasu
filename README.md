@@ -15,14 +15,16 @@ HTML / CSS / JavaScript / Gemini API
 ## 画面
 
 ### ① シラバス入力画面
-![解析結果画面](kaisekimae.PNG)
+![入力画面](kaisekimae.PNG)
 
 ### ② AIによる解析結果
 ![解析結果画面](kaisekigo.PNG)
 
 ### ③ 授業比較画面
-![解析結果画面](hikaku.PNG)
+![比較結果画面](hikaku.PNG)
 
-## 工夫した点・苦労した点
+## 工夫した点
 Gemini APIから返されたJSONデータをJavaScriptで処理し、
 画面に表示できるようにしました。
+
+また、複数の授業を比較できるように、解析したデータをlocalStorageに一時保存し、授業名・難易度・評価方法・課題量などを一覧で比較できるようにしました。
