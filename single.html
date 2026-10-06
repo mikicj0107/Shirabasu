@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>シラバス解析モード</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div id="Setup">
+      <h1>解析モード</h1>
+
+      <label for="apiKey">API Key:</label>
+      <input
+        type="password"
+        id="apiKey"
+        placeholder="Enter your API key"
+        onchange="saveSettings()"
+      />
+
+      <textarea
+        id="shirabasu"
+        placeholder="ここにシラバスの内容をコピペしてください"
+      ></textarea>
+      <button onclick="generateIngredients()">シラバスを解析</button>
+      <button onclick="location.href='index.html'">戻る</button>
+
+      <div class="loading" id="loading">生成中...</div>
+    </div>
+
+    <div id="Results">
+      <h2>解析結果</h2>
+      <div id="ingredientsList"></div>
+      <button onclick="restartQuiz()">戻る</button>
+    </div>
+
+    <script>
+      const GEMINI_API_ENDPOINT =
+        "https://generativelanguage.googleapis.com/v1beta/models/";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        loadSettings();
+        updateStatus();
+      });
+
+      function saveSettings() {
+        const apiKey = document.getElementById("apiKey").value;
+
+        localStorage.setItem("Setting", JSON.stringify({ apiKey }));
+
+        updateStatus();
+      }
+
+      function loadSettings() {
+        const saved = localStorage.getItem("Setting");
+        if (saved) {
+          const obj = JSON.parse(saved);
+          document.getElementById("apiKey").value = obj.apiKey || "";
+        }
+      }
+
+      async function generateIngredients() {
+        const shirabasu = document.getElementById("shirabasu").value.trim();
+        if (!shirabasu) return alert("シラバスを入力してください");
+
+        const settings = JSON.parse(localStorage.getItem("Setting"));
+        const apiKey = settings.apiKey;
+
+        if (!apiKey) return alert("APIキーを設定してください");
+        document.getElementById("loading").style.display = "block"; // 表示
+
+        const prompt = `次の形式のJSON「のみ」を返してください。余計な文章は禁止。
+{
+  "subject": "授業科目名",
+  "evaluation": {
+    "type": "テスト / レポート / 出席 / 発表",
+    "detail": "割合を簡潔に"
+  },
+  "studyinner":"授業の内容を一言！にまとめて。お堅めの表現だったら柔らかくして",
+  "keyword":"授業で重要なキーワードを3つ並べて",
+  "difficulty": "授業の大変さを★☆☆☆☆〜★★★★★で",
+  "recommended_for": "どんな人におすすめ？一言で",
+  "not_recommended_for": "どんな人にはきつい？一言で"
+}
+シラバス: ${shirabasu}`;
+
+        try {
+          const response = await fetch(
+            `${GEMINI_API_ENDPOINT}gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("API Error:", response.status, errorText);
+            throw new Error("API Error: " + response.status);
+          }
+
+          const data = await response.json();
+
+          const text = data.candidates[0].content.parts[0].text;
+
+          const match = text.match(/\{[\s\S]*\}/);
+          if (!match) {
+            throw new Error("JSON が見つかりませんでした");
+          }
+
+          const json = JSON.parse(match[0]);
+
+          const list = document.getElementById("ingredientsList");
+          list.innerHTML = `
+<table class="result-table">
+  <tr>
+    <th>授業科目名</th>
+    <td>${json.subject}</td>
+  </tr>
+  <tr>
+    <th>成績評価方法</th>
+    <td>${json.evaluation.type}</td>
+  </tr>
+  <tr>
+    <th>割合</th>
+    <td>${json.evaluation.detail}</td>
+  </tr>
+  <tr>
+    <th>授業内容</th>
+    <td>${json.studyinner}</td>
+  </tr>
+  <tr>
+    <th>重要キーワード</th>
+    <td>${json.keyword}</td>
+  </tr>
+  <tr>
+    <th>履修難易度</th>
+    <td>${json.difficulty}</td>
+  </tr>
+  <tr>
+    <th>おすすめ</th>
+    <td>${json.recommended_for}</td>
+  </tr>
+  <tr>
+    <th>向いていない人</th>
+    <td>${json.not_recommended_for}</td>
+  </tr>
+</table>
+`;
+          document.getElementById("Setup").style.display = "none";
+          document.getElementById("Results").style.display = "block";
+        } catch (e) {
+          alert("解析に失敗しました: " + e.message);
+        } finally {
+          document.getElementById("loading").style.display = "none";
+        }
+      }
+
+      function restartQuiz() {
+        document.getElementById("Results").style.display = "none";
+        document.getElementById("Setup").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
