@@ -15,7 +15,7 @@ HTML / CSS / JavaScript / Gemini API
 ## 画面
 
 ### ① シラバス入力画面
-（スクリーンショット）
+![解析結果画面](kaisekimae.png)
 
 ### ② AIによる解析結果
 （スクリーンショット）
