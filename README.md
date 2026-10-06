@@ -18,10 +18,10 @@ HTML / CSS / JavaScript / Gemini API
 ![解析結果画面](kaisekimae.PNG)
 
 ### ② AIによる解析結果
-（スクリーンショット）
+![解析結果画面](kaisekigo.PNG)
 
 ### ③ 授業比較画面
-（スクリーンショット）
+![解析結果画面](hikaku.PNG)
 
 ## 工夫した点・苦労した点
 Gemini APIから返されたJSONデータをJavaScriptで処理し、
