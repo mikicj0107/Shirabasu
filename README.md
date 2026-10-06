@@ -1,6 +1,5 @@
 # シラバス解析・比較アプリ
-アプリURL
-https://mikicj0107.github.io/Shirabasu/
+アプリURL　https://mikicj0107.github.io/Shirabasu/
 
 ## 概要
 履修登録時に複数のシラバスを比較する負担を減らすために
