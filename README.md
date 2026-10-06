@@ -1,5 +1,5 @@
 # シラバス解析・比較アプリ
-
+アプリURL
 https://mikicj0107.github.io/Shirabasu/
 
 ## 概要
