@@ -38,7 +38,6 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", loadSettings);
-      let gradeChartInstance = null;
 
       function saveSettings() {
         const apiKey = document.getElementById("apiKey").value;
@@ -72,7 +71,7 @@
           "attendance": 10,
           "presentation": 0
         },
-        "kadai": "課題の量を★☆☆～★★★で"
+        "kadai": "課題の量を★☆☆～★★★で",
         "skill": "習得できるスキル、知識を一つ"
       }
       シラバス: ${shirabasu}`;
@@ -156,8 +155,6 @@
             </tbody>
           </table>
         `;
-
-        const ctx = document.getElementById("gradeChart");
 
         document.getElementById("compareResult").innerHTML = tableHTML;
 
